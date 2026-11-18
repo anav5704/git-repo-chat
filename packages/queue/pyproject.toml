@@ -1,0 +1,13 @@
+[project]
+name = "queue"
+version = "0.1.0"
+description = "Enqueue, claim, and listen for jobs"
+requires-python = ">=3.13"
+dependencies = ["db"]
+
+[tool.uv.sources]
+db = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

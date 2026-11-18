@@ -1,0 +1,80 @@
+# Workspace root. This project is the shared environment: one venv, lint, and tests.
+# It is not a library. tool.uv.package is false, so nothing imports "repo-chat".
+# Each member declares only the packages it is allowed to call.
+
+[project]
+name = "repo-chat"
+version = "0.1.0"
+description = "Chat with a git repository"
+requires-python = ">=3.13"
+dependencies = [
+    "db",
+    "queue",
+    "repogit",
+    "chunking",
+    "embeddings",
+    "llm",
+    "retrieval",
+    "web",
+    "indexer",
+    "api",
+    "tui",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*", "apps/*"]
+
+[tool.uv.sources]
+db = { workspace = true }
+queue = { workspace = true }
+repogit = { workspace = true }
+chunking = { workspace = true }
+embeddings = { workspace = true }
+llm = { workspace = true }
+retrieval = { workspace = true }
+web = { workspace = true }
+indexer = { workspace = true }
+api = { workspace = true }
+tui = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pyright>=1.1.390",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+target-version = "py313"
+src = ["packages", "apps", "tests"]
+
+[tool.ruff.lint]
+extend-select = ["I", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "api",
+    "chunking",
+    "db",
+    "embeddings",
+    "indexer",
+    "llm",
+    "queue",
+    "repogit",
+    "retrieval",
+    "tui",
+    "web",
+]
+
+[tool.pyright]
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "standard"
+include = ["packages", "apps", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages", "apps"]

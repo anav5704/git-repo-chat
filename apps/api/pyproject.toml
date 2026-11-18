@@ -1,0 +1,28 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "HTTP API that runs the chat pipeline and streams the answer"
+requires-python = ">=3.13"
+dependencies = [
+    "db",
+    "fastapi>=0.115",
+    "llm",
+    "pydantic>=2.10",
+    "queue",
+    "retrieval",
+    "sse-starlette>=2.1",
+    "structlog>=24.4",
+    "uvicorn[standard]>=0.32",
+    "web",
+]
+
+[tool.uv.sources]
+db = { workspace = true }
+llm = { workspace = true }
+queue = { workspace = true }
+retrieval = { workspace = true }
+web = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

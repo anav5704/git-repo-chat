@@ -34,7 +34,7 @@ repo-chat/
 ├─ packages/
 │  ├─ db/                         # pool, row types, SQL migrations
 │  ├─ queue/                      # enqueue, claim, listen
-│  ├─ git/                        # clone, walk, diff
+│  ├─ repogit/                    # clone, walk, diff
 │  ├─ chunking/                   # fixed, recursive, tree-sitter, commit/diff
 │  ├─ embeddings/                 # gateway embed client, batching, content-hash skip
 │  ├─ llm/                        # gateway chat client, streaming, prompts
@@ -46,13 +46,13 @@ repo-chat/
    └─ tui/
 ```
 
-The import name for `packages/git` is `repogit`, so it does not clash with GitPython. Each package reads the env vars it needs. The connection pool lives in `db`.
+The git helper is the `repogit` package. That name leaves the `git` import free for GitPython. Each package reads the env vars it needs. The connection pool lives in `db`.
 
 ```mermaid
 flowchart BT
   db[db]
   queue[queue]
-  gitpkg[git]
+  repogit[repogit]
   chunking[chunking]
   embeddings[embeddings]
   llm[llm]
@@ -69,7 +69,7 @@ flowchart BT
   retrieval --> embeddings
   retrieval --> llm
   indexer --> queue
-  indexer --> gitpkg
+  indexer --> repogit
   indexer --> chunking
   indexer --> embeddings
   indexer --> db

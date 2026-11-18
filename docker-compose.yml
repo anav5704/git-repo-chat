@@ -1,0 +1,23 @@
+# Postgres is the only infrastructure. Apps run on the host.
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: repo_chat
+      POSTGRES_PASSWORD: repo_chat
+      POSTGRES_DB: repo_chat
+    # Postgres 18 stores data in a subdirectory of /var/lib/postgresql.
+    # Mounting /var/lib/postgresql/data instead leaves the files in an anonymous volume.
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repo_chat -d repo_chat"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  pgdata:

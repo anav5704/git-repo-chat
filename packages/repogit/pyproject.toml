@@ -1,0 +1,10 @@
+[project]
+name = "repogit"
+version = "0.1.0"
+description = "Clone, fetch, list files, and diff via the git binary"
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

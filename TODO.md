@@ -5,7 +5,7 @@ Steps follow the build order in [README.md](README.md). Finish each section befo
 ## 1. Workspace and database
 
 - Root `pyproject.toml`: Python 3.13, uv workspace members `packages/*` and `apps/*`, hatchling, ruff, pyright, pytest.
-- One package per directory in the README tree. `packages/git` installs as `repogit`. Each app declares only the workspace deps it calls. `apps/tui` depends on none of them.
+- One package per directory in the README tree. The git helper is `packages/repogit`. Each app declares only the workspace deps it calls. `apps/tui` depends on none of them.
 - `docker-compose.yml`: `pgvector/pgvector:pg18`, a named volume mounted at `/var/lib/postgresql` (Postgres 18's volume path, not `/var/lib/postgresql/data`), a healthcheck, port published to the host.
 - `justfile`: `up`, `down`, `migrate`, `lint`, `test`.
 - `packages/db`: a `psycopg_pool` pool that calls `register_vector` on each connection, dataclasses with `class_row`, and an applier that runs `migrations/*.sql` in order and records them in `schema_migrations`.
@@ -23,7 +23,7 @@ Done when `just up` is healthy, `just migrate` succeeds twice, and a tiny script
 - The worker holds a second connection, `autocommit=True`, outside the pool: `LISTEN jobs`, then `notifies(timeout=5)`.
 - Failed jobs increment `attempts` and set `run_after` with backoff. A reaper requeues rows whose `locked_at` is stale.
 - Tests against Compose Postgres: two workers cannot claim the same job, a notify wakes the listener, and a stale lock is requeued.
-- `packages/git` (`repogit`): clone or fetch via the git binary, `git ls-files` for the file list, diff against `last_indexed_commit`, blob sha per file. Skip binaries and lockfiles.
+- `packages/repogit`: clone or fetch via the git binary, `git ls-files` for the file list, diff against `last_indexed_commit`, blob sha per file. Skip binaries and lockfiles.
 - `packages/chunking`: fixed windows with overlap first. Then recursive splits, tree-sitter boundaries (function and class), and commit chunks (message plus a size-capped diff). Each chunk records kind `code`, `commit`, or `doc`, line range, and content hash.
 - `packages/embeddings`: httpx client for the gateway embeddings endpoint. Batch requests. Skip the gateway call when `(content_hash, model)` already has a row.
 - `apps/indexer`: claim loop. `clone_repo`, then `index_files` and `index_commits`, then `embed_chunks`. Upsert files, chunks, commits, and `chunk_embeddings`. Advance `repos.last_indexed_commit` and status.
