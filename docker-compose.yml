@@ -2,7 +2,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg18
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: repo_chat
       POSTGRES_PASSWORD: repo_chat
