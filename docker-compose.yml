@@ -1,4 +1,3 @@
-# Postgres is the only infrastructure. Apps run on the host.
 services:
   postgres:
     image: pgvector/pgvector:pg18
@@ -8,8 +7,6 @@ services:
       POSTGRES_USER: repo_chat
       POSTGRES_PASSWORD: repo_chat
       POSTGRES_DB: repo_chat
-    # Postgres 18 stores data in a subdirectory of /var/lib/postgresql.
-    # Mounting /var/lib/postgresql/data instead leaves the files in an anonymous volume.
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:

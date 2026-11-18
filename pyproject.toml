@@ -1,7 +1,3 @@
-# Workspace root. This project is the shared environment: one venv, lint, and tests.
-# It is not a library. tool.uv.package is false, so nothing imports "repo-chat".
-# Each member declares only the packages it is allowed to call.
-
 [project]
 name = "repo-chat"
 version = "0.1.0"
