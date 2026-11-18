@@ -10,7 +10,7 @@ Steps follow the build order in [README.md](README.md). Finish each section befo
 - `justfile`: `up`, `down`, `migrate`, `lint`, `test`.
 - `packages/db`: a `psycopg_pool` pool that calls `register_vector` on each connection, dataclasses with `class_row`, and an applier that runs `migrations/*.sql` in order and records them in `schema_migrations`.
 - First migration: `vector` and `pg_trgm`, then `repos`, `commits`, `files`, `chunks`, `chunk_embeddings`, `jobs`, `conversations`, `messages`. Put `repo_id` on `chunks`. Add an HNSW index on `chunk_embeddings.embedding`. Leave web tables for section 4.
-- `.github/workflows/ci.yml` runs ruff, pyright, and pytest.
+- `.github/workflows/code-quality.yml` has a `lint` job for `ruff check`, a `type` job for Pyright, and a `format` job for `ruff format --check`.
 - Env: `DATABASE_URL`.
 
 Done when `just up` is healthy, `just migrate` succeeds twice, and a tiny script inserts and selects a vector.

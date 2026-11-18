@@ -20,7 +20,7 @@ Postgres with pgvector is the only infrastructure. It holds repos, chunks, embed
 - **tree-sitter** and **tree-sitter-language-pack**
 - **Vercel AI Gateway** through httpx, using the chat-completions HTTP shape. `CHAT_MODEL` and `EMBEDDING_MODEL` are env vars. Start with OpenAI models on the gateway. Reranking is another gateway chat call
 - **Brave Search API** for the result list, **trafilatura** to extract page text
-- **ruff**, **pyright**, **pytest** against the Compose Postgres, **GitHub Actions** for those three
+- **ruff**, **pyright**, **pytest**. **GitHub Actions** runs Ruff and Pyright
 
 ## Workspace
 
