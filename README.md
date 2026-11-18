@@ -33,7 +33,7 @@ repo-chat/
 ├─ justfile
 ├─ packages/
 │  ├─ db/                         # pool, row types, SQL migrations
-│  ├─ queue/                      # enqueue, claim, listen
+│  ├─ jobs/                       # enqueue, claim, listen
 │  ├─ repogit/                    # clone, walk, diff
 │  ├─ chunking/                   # fixed, recursive, tree-sitter, commit/diff
 │  ├─ embeddings/                 # gateway embed client, batching, content-hash skip
@@ -46,12 +46,12 @@ repo-chat/
    └─ tui/
 ```
 
-The git helper is the `repogit` package. That name leaves the `git` import free for GitPython. Each package reads the env vars it needs. The connection pool lives in `db`.
+The git helper is the `repogit` package. That name leaves the `git` import free for GitPython. The job helpers are the `jobs` package. That name leaves the `queue` import free for the standard library. Each package reads the env vars it needs. The connection pool lives in `db`.
 
 ```mermaid
 flowchart BT
   db[db]
-  queue[queue]
+  jobs[jobs]
   repogit[repogit]
   chunking[chunking]
   embeddings[embeddings]
@@ -61,14 +61,14 @@ flowchart BT
   indexer[indexer]
   api[api]
 
-  queue --> db
+  jobs --> db
   web --> db
   web --> chunking
   web --> embeddings
   retrieval --> db
   retrieval --> embeddings
   retrieval --> llm
-  indexer --> queue
+  indexer --> jobs
   indexer --> repogit
   indexer --> chunking
   indexer --> embeddings
@@ -76,13 +76,13 @@ flowchart BT
   api --> retrieval
   api --> web
   api --> llm
-  api --> queue
+  api --> jobs
   api --> db
 ```
 
 The TUI is not in that graph. It talks to the API over HTTP and SSE and imports none of the packages.
 
-`retrieval` does not import `web`, and `web` does not import `retrieval`. The API runs both and passes web hits into `retrieval.fuse`. Search SQL lives in `retrieval`. Queue SQL lives in `queue`. `db` is the pool, row types, and migrations.
+`retrieval` does not import `web`, and `web` does not import `retrieval`. The API runs both and passes web hits into `retrieval.fuse`. Search SQL lives in `retrieval`. Job SQL lives in `jobs`. `db` is the pool, row types, and migrations.
 
 ## Apps
 
@@ -94,7 +94,7 @@ The TUI is not in that graph. It talks to the API over HTTP and SSE and imports 
 
 `db` holds a `psycopg_pool` pool, dataclasses loaded with `class_row`, and numbered `.sql` files applied in order. Other packages take a connection and run their own SQL.
 
-## Queue
+## Jobs
 
 `LISTEN` is tied to a connection, so the listen connection stays outside the pool. A pooled connection returned between queries would drop it.
 
@@ -178,7 +178,7 @@ flowchart TD
 Detailed steps are in [TODO.md](TODO.md).
 
 1. Workspace, compose, `db` migrations.
-2. `queue`, then indexer: clone, fixed-size chunk, embed, store. Tree-sitter and commit chunks land in `chunking` as soon as the fixed-size path works.
+2. `jobs`, then indexer: clone, fixed-size chunk, embed, store. Tree-sitter and commit chunks land in `chunking` as soon as the fixed-size path works.
 3. `retrieval`: vector, then full-text, trigram, history, fusion, rerank, query rewriting.
 4. `web`: fetch, cache, and fuse from the API.
 5. Streaming chat, then the Textual repo list and chat screen.

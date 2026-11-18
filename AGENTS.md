@@ -8,10 +8,10 @@ This repo is for learning retrieval and search in depth: chunking, embeddings, v
 
 - Packages stay separate. Apps depend only on what they call. There is no shared `core` package.
 - `retrieval` does not import `web`. `web` does not import `retrieval`. The API runs both and passes web hits into `retrieval.fuse`.
-- Search SQL lives in `retrieval`. Queue SQL lives in `queue`. `db` is the pool, row types, and numbered SQL migrations.
+- Search SQL lives in `retrieval`. Job SQL lives in `jobs`. `db` is the pool, row types, and numbered SQL migrations.
 - Every query uses psycopg 3. Rows are dataclasses. Web chunks stay out of the repo HNSW index.
 - The TUI talks to the API over HTTP and SSE. It imports none of the packages.
-- The git helper package is `repogit`.
+- The git helper package is `repogit`. The job package is `jobs`, so `queue` stays the standard library.
 - Chat is the router pipeline in [README.md](README.md). The model does not choose tools. A hand-written tool loop, if added later, is a second mode over the same search functions, with a step cap, and it does not replace the pipeline.
 
 ## Where to work

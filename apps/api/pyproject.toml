@@ -8,7 +8,7 @@ dependencies = [
     "fastapi>=0.115",
     "llm",
     "pydantic>=2.10",
-    "queue",
+    "jobs",
     "retrieval",
     "sse-starlette>=2.1",
     "structlog>=24.4",
@@ -19,7 +19,7 @@ dependencies = [
 [tool.uv.sources]
 db = { workspace = true }
 llm = { workspace = true }
-queue = { workspace = true }
+jobs = { workspace = true }
 retrieval = { workspace = true }
 web = { workspace = true }
 

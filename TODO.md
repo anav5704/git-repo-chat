@@ -15,9 +15,9 @@ Steps follow the build order in [README.md](README.md). Finish each section befo
 
 Done when `just up` is healthy, `just migrate` succeeds twice, and a tiny script inserts and selects a vector.
 
-## 2. Queue and indexer
+## 2. Jobs and indexer
 
-- `packages/queue` takes a psycopg connection from the caller.
+- `packages/jobs` takes a psycopg connection from the caller.
 - `enqueue` inserts a row and `NOTIFY jobs`. The payload stays in the row.
 - `claim` runs `UPDATE ... FOR UPDATE SKIP LOCKED ... RETURNING *` in a short transaction.
 - The worker holds a second connection, `autocommit=True`, outside the pool: `LISTEN jobs`, then `notifies(timeout=5)`.

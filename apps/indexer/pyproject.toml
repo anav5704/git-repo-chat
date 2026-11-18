@@ -7,7 +7,7 @@ dependencies = [
     "chunking",
     "db",
     "embeddings",
-    "queue",
+    "jobs",
     "repogit",
     "structlog>=24.4",
 ]
@@ -16,7 +16,7 @@ dependencies = [
 chunking = { workspace = true }
 db = { workspace = true }
 embeddings = { workspace = true }
-queue = { workspace = true }
+jobs = { workspace = true }
 repogit = { workspace = true }
 
 [build-system]

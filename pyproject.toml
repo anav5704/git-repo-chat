@@ -5,7 +5,7 @@ description = "Chat with a git repository"
 requires-python = ">=3.13"
 dependencies = [
     "db",
-    "queue",
+    "jobs",
     "repogit",
     "chunking",
     "embeddings",
@@ -25,7 +25,7 @@ members = ["packages/*", "apps/*"]
 
 [tool.uv.sources]
 db = { workspace = true }
-queue = { workspace = true }
+jobs = { workspace = true }
 repogit = { workspace = true }
 chunking = { workspace = true }
 embeddings = { workspace = true }
@@ -57,8 +57,8 @@ known-first-party = [
     "db",
     "embeddings",
     "indexer",
+    "jobs",
     "llm",
-    "queue",
     "repogit",
     "retrieval",
     "tui",

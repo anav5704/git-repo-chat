@@ -1,9 +1,12 @@
 [project]
-name = "queue"
+name = "jobs"
 version = "0.1.0"
 description = "Enqueue, claim, and listen for jobs"
 requires-python = ">=3.13"
-dependencies = ["db"]
+dependencies = [
+    "db",
+    "psycopg>=3.2",
+]
 
 [tool.uv.sources]
 db = { workspace = true }

@@ -9,8 +9,8 @@ members = [
     "db",
     "embeddings",
     "indexer",
+    "jobs",
     "llm",
-    "queue",
     "repo-chat",
     "repogit",
     "retrieval",
@@ -56,9 +56,9 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "db" },
     { name = "fastapi" },
+    { name = "jobs" },
     { name = "llm" },
     { name = "pydantic" },
-    { name = "queue" },
     { name = "retrieval" },
     { name = "sse-starlette" },
     { name = "structlog" },
@@ -70,9 +70,9 @@ dependencies = [
 requires-dist = [
     { name = "db", editable = "packages/db" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "jobs", editable = "packages/jobs" },
     { name = "llm", editable = "packages/llm" },
     { name = "pydantic", specifier = ">=2.10" },
-    { name = "queue", editable = "packages/queue" },
     { name = "retrieval", editable = "packages/retrieval" },
     { name = "sse-starlette", specifier = ">=2.1" },
     { name = "structlog", specifier = ">=24.4" },
@@ -285,7 +285,7 @@ dependencies = [
     { name = "chunking" },
     { name = "db" },
     { name = "embeddings" },
-    { name = "queue" },
+    { name = "jobs" },
     { name = "repogit" },
     { name = "structlog" },
 ]
@@ -295,7 +295,7 @@ requires-dist = [
     { name = "chunking", editable = "packages/chunking" },
     { name = "db", editable = "packages/db" },
     { name = "embeddings", editable = "packages/embeddings" },
-    { name = "queue", editable = "packages/queue" },
+    { name = "jobs", editable = "packages/jobs" },
     { name = "repogit", editable = "packages/repogit" },
     { name = "structlog", specifier = ">=24.4" },
 ]
@@ -307,6 +307,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/01/e1/2069291243c926a2ff1cd706c7f3eeb9b62144bf60f77c9fb9ff2fb26bd3/iniconfig-2.3.1.tar.gz", hash = "sha256:67f4b9c50da0dedf52af349e7749a80a9057a5031199791b906c3bb3ae878960", size = 21209, upload-time = "2026-10-06T22:48:38.076Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/43/4ca9e49d27a1fcf6bece6f6aec0ea46bb9112489b93d4b688fb415457bdb/iniconfig-2.3.1-py3-none-any.whl", hash = "sha256:9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7", size = 7552, upload-time = "2026-10-06T22:48:36.959Z" },
+]
+
+[[package]]
+name = "jobs"
+version = "0.1.0"
+source = { editable = "packages/jobs" }
+dependencies = [
+    { name = "db" },
+    { name = "psycopg" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "db", editable = "packages/db" },
+    { name = "psycopg", specifier = ">=3.2" },
 ]
 
 [[package]]
@@ -686,17 +701,6 @@ wheels = [
 ]
 
 [[package]]
-name = "queue"
-version = "0.1.0"
-source = { editable = "packages/queue" }
-dependencies = [
-    { name = "db" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "db", editable = "packages/db" }]
-
-[[package]]
 name = "repo-chat"
 version = "0.1.0"
 source = { virtual = "." }
@@ -706,8 +710,8 @@ dependencies = [
     { name = "db" },
     { name = "embeddings" },
     { name = "indexer" },
+    { name = "jobs" },
     { name = "llm" },
-    { name = "queue" },
     { name = "repogit" },
     { name = "retrieval" },
     { name = "tui" },
@@ -728,8 +732,8 @@ requires-dist = [
     { name = "db", editable = "packages/db" },
     { name = "embeddings", editable = "packages/embeddings" },
     { name = "indexer", editable = "apps/indexer" },
+    { name = "jobs", editable = "packages/jobs" },
     { name = "llm", editable = "packages/llm" },
-    { name = "queue", editable = "packages/queue" },
     { name = "repogit", editable = "packages/repogit" },
     { name = "retrieval", editable = "packages/retrieval" },
     { name = "tui", editable = "apps/tui" },
