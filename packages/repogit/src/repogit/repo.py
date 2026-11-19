@@ -34,6 +34,15 @@ class Blob:
     sha: str
 
 
+@dataclass(frozen=True, slots=True)
+class Revision:
+    sha: str
+    author: str
+    committed_at: str
+    message: str
+    diff: str
+
+
 def _git(repo: Path | None, *args: str) -> bytes:
     command = ["git"]
     if repo is not None:
@@ -93,6 +102,42 @@ def list_files(repo: Path, commit: str) -> tuple[Blob, ...]:
             continue
         chosen.append((path, sha))
     return _without_binaries(repo, chosen)
+
+
+def read_blob(repo: Path, sha: str) -> str:
+    return _git(repo, "cat-file", "blob", sha).decode("utf-8", "replace")
+
+
+def history(repo: Path, old: str | None, new: str) -> tuple[Revision, ...]:
+    revision = new if old is None else f"{old}..{new}"
+    raw = _git(
+        repo,
+        "log",
+        "-z",
+        "--reverse",
+        "--format=%H%x1f%an%x1f%cI%x1f%B",
+        revision,
+    )
+    revisions: list[Revision] = []
+    for record in raw.split(b"\0"):
+        if not record:
+            continue
+        sha, author, committed_at, message = record.decode("utf-8", "replace").split(
+            "\x1f", 3
+        )
+        diff = _git(repo, "show", "--no-color", "--format=", "-p", sha).decode(
+            "utf-8", "replace"
+        )
+        revisions.append(
+            Revision(
+                sha,
+                author,
+                committed_at.strip(),
+                message.strip("\n"),
+                diff.strip("\n"),
+            )
+        )
+    return tuple(revisions)
 
 
 def changed_paths(repo: Path, old: str, new: str) -> tuple[str, ...]:
