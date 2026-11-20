@@ -1,3 +1,4 @@
+import os
 import shutil
 import stat
 from pathlib import Path
@@ -5,10 +6,12 @@ from typing import Any
 from uuid import UUID
 
 import psycopg
+from pgvector import Vector
 from psycopg.rows import class_row
 
 from chunking import commit_chunks, split_text
 from db.rows import Repo
+from embeddings import embed
 from jobs import enqueue
 from repogit import (
     Revision,
@@ -20,6 +23,8 @@ from repogit import (
     read_blob,
 )
 
+_DIMS = 1536
+_EMBED_BATCH = 64
 _DOC_SUFFIXES = frozenset({".adoc", ".md", ".mdx", ".rst", ".txt"})
 _LANGUAGES = {
     ".js": "javascript",
@@ -50,6 +55,8 @@ def run_job(
         _index_files(conn, repo, checkout, payload)
     elif job_type == "index_commits":
         _index_commits(conn, repo, checkout, payload)
+    elif job_type == "embed_chunks":
+        _embed_chunks(conn, repo, payload)
     else:
         raise RuntimeError(f"unknown job type {job_type}")
 
@@ -150,6 +157,62 @@ def _index_commits(
                 """,
                 (repo.id, commit_id, chunk.content, chunk.content_hash),
             )
+    enqueue(
+        conn,
+        repo_id=repo.id,
+        job_type="embed_chunks",
+        payload={"commit": commit},
+    )
+
+
+def _embed_chunks(
+    conn: psycopg.Connection[Any], repo: Repo, payload: dict[str, Any]
+) -> None:
+    commit = str(payload["commit"])
+    model = _embedding_model()
+    missing = conn.execute(
+        """
+        select id, content_hash, content
+        from chunks
+        where repo_id = %s
+          and not exists (
+              select 1
+              from chunk_embeddings
+              where chunk_embeddings.chunk_id = chunks.id
+                and chunk_embeddings.model = %s
+          )
+        order by id
+        """,
+        (repo.id, model),
+    ).fetchall()
+    by_hash: dict[str, list[UUID]] = {}
+    texts: dict[str, str] = {}
+    for chunk_id, content_hash, content in missing:
+        if not isinstance(chunk_id, UUID) or not isinstance(content_hash, str):
+            raise TypeError("chunk row has the wrong shape")
+        if not isinstance(content, str):
+            raise TypeError("chunk row has the wrong shape")
+        by_hash.setdefault(content_hash, []).append(chunk_id)
+        texts.setdefault(content_hash, content)
+    known = _known_vectors(conn, model, list(texts))
+    _store_vectors(conn, model, known, by_hash)
+    conn.commit()
+    pending = [
+        (content_hash, texts[content_hash])
+        for content_hash in texts
+        if content_hash not in known
+    ]
+    for start in range(0, len(pending), _EMBED_BATCH):
+        embedded = embed(
+            pending[start : start + _EMBED_BATCH], task="RETRIEVAL_DOCUMENT"
+        )
+        _store_vectors(
+            conn,
+            model,
+            {item.content_hash: list(item.vector) for item in embedded},
+            by_hash,
+        )
+        conn.commit()
     conn.execute(
         """
         update repos
@@ -158,6 +221,68 @@ def _index_commits(
         """,
         (commit, repo.id),
     )
+    conn.commit()
+
+
+def _embedding_model() -> str:
+    model = os.environ.get("EMBEDDING_MODEL", "gemini-embedding-2").strip()
+    for prefix in ("models/", "google/"):
+        if model.startswith(prefix):
+            model = model.removeprefix(prefix)
+    if not model:
+        raise RuntimeError("EMBEDDING_MODEL is required")
+    return model
+
+
+def _known_vectors(
+    conn: psycopg.Connection[Any], model: str, hashes: list[str]
+) -> dict[str, list[float]]:
+    if not hashes:
+        return {}
+    found = conn.execute(
+        """
+        select distinct on (chunks.content_hash)
+            chunks.content_hash, chunk_embeddings.embedding
+        from chunk_embeddings
+        join chunks on chunks.id = chunk_embeddings.chunk_id
+        where chunk_embeddings.model = %s
+          and chunks.content_hash = any(%s)
+        order by chunks.content_hash
+        """,
+        (model, hashes),
+    ).fetchall()
+    vectors: dict[str, list[float]] = {}
+    for content_hash, embedding in found:
+        if not isinstance(content_hash, str):
+            raise TypeError("stored embedding has the wrong shape")
+        values = [float(item) for item in embedding]
+        if len(values) == _DIMS:
+            vectors[content_hash] = values
+    return vectors
+
+
+def _store_vectors(
+    conn: psycopg.Connection[Any],
+    model: str,
+    vectors: dict[str, list[float]],
+    by_hash: dict[str, list[UUID]],
+) -> None:
+    rows = [
+        (chunk_id, model, _DIMS, Vector(vector))
+        for content_hash, vector in vectors.items()
+        for chunk_id in by_hash[content_hash]
+    ]
+    if not rows:
+        return
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            insert into chunk_embeddings (chunk_id, model, dims, embedding)
+            values (%s, %s, %s, %s)
+            on conflict (chunk_id, model) do nothing
+            """,
+            rows,
+        )
 
 
 def _repo(conn: psycopg.Connection[Any], repo_id: UUID) -> Repo:

@@ -3,6 +3,7 @@ from uuid import UUID
 
 import psycopg
 from psycopg.rows import class_row
+from psycopg.types.json import Jsonb
 
 from db.rows import Job
 
@@ -21,7 +22,7 @@ def enqueue(
             values (%s, %s, %s)
             returning *
             """,
-            (repo_id, job_type, {} if payload is None else payload),
+            (repo_id, job_type, Jsonb({} if payload is None else payload)),
         )
         job = cur.fetchone()
         cur.execute("notify jobs")
