@@ -121,7 +121,7 @@ def _key(hit: Hit) -> tuple[Any, ...]:
     if hit.chunk_id is not None:
         return ("chunk", hit.chunk_id)
     if hit.url:
-        return ("url", hit.url)
+        return ("url", hit.url, hit.start_line, hit.end_line)
     if hit.sha and hit.kind == "commit":
         return ("commit", hit.sha, hit.content)
     return ("text", hit.kind, hit.path, hit.start_line, hit.content)

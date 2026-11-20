@@ -19,7 +19,7 @@ Postgres with pgvector is the only infrastructure. It holds repos, chunks, embed
 - The **git** binary for clone, fetch, `ls-files`, and diff
 - **tree-sitter** and **tree-sitter-language-pack**
 - **Vercel AI Gateway** through httpx, using the chat-completions HTTP shape. `CHAT_MODEL` and `EMBEDDING_MODEL` are env vars. Start with OpenAI models on the gateway. Reranking is another gateway chat call
-- **Brave Search API** for the result list, **trafilatura** to extract page text
+- **Tavily** for the result list, **trafilatura** to extract page text
 - **ruff**, **pyright**, **pytest**. **GitHub Actions** runs Ruff and Pyright
 
 ## Workspace
@@ -128,7 +128,7 @@ The router is one structured gateway call. Input is the question plus a short re
 
 The API executes that decision. If the router skipped web and repo retrieval comes back empty or under a score floor, the API calls web anyway. That covers a router miss. The score floor is a knob, not a calibrated probability.
 
-Brave returns the result list. httpx fetches allowlisted domains (docs, changelogs, GitHub issues). trafilatura extracts the text. The chunking package splits it, embeddings caches it by content hash. `fetched_at` shows stale docs. The API fuses web hits with repo hits only after both lists exist.
+Tavily returns the result list. httpx fetches allowlisted domains (docs, changelogs, GitHub issues). trafilatura extracts the text. The chunking package splits it, embeddings caches it by content hash. `fetched_at` shows stale docs. The API fuses web hits with repo hits only after both lists exist.
 
 ## Query flow
 

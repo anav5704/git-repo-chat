@@ -49,12 +49,12 @@ Done when a script can route one repo question and one docs question, run only t
 ## 4. Web
 
 - Migration: `web_pages`, `web_chunks`, `web_chunk_embeddings`. No foreign key into repo `chunks`.
-- `packages/web`: Brave search client as a single function. httpx fetch. Keep responses whose domain is on the allowlist (docs, changelogs, GitHub issues). trafilatura extracts the text. Chunk with `chunking`, embed with `embeddings`, upsert by content hash. Store `fetched_at`.
+- `packages/web`: Tavily search client as a single function. httpx fetch. Keep responses whose domain is on the allowlist (docs, changelogs, GitHub issues). trafilatura extracts the text. Chunk with `chunking`, embed with `embeddings`, upsert by content hash. Store `fetched_at`.
 - Return hits shaped so the API can pass them to `retrieval.fuse`. This package does not import `retrieval`.
 - A second fetch of the same url with the same content hash does not call the embedding API.
-- Env: `BRAVE_API_KEY`, `WEB_ALLOWLIST`.
+- Env: `TAVILY_API_KEY`, `WEB_ALLOWLIST`.
 
-Done when a docs question returns cached web hits with urls, and a repo-only question does not call Brave.
+Done when a docs question returns cached web hits with urls, and a repo-only question does not call Tavily.
 
 ## 5. API and TUI
 
