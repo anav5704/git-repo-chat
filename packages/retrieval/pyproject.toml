@@ -7,6 +7,8 @@ dependencies = [
     "db",
     "embeddings",
     "llm",
+    "pgvector>=0.3",
+    "psycopg>=3.2",
     "pydantic>=2.10",
 ]
 
