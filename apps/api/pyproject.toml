@@ -6,9 +6,10 @@ requires-python = ">=3.13"
 dependencies = [
     "db",
     "fastapi>=0.115",
-    "llm",
-    "pydantic>=2.10",
     "jobs",
+    "llm",
+    "psycopg>=3.2",
+    "pydantic>=2.10",
     "retrieval",
     "sse-starlette>=2.1",
     "structlog>=24.4",
