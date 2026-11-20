@@ -1,7 +1,7 @@
 [project]
 name = "embeddings"
 version = "0.1.0"
-description = "Embed chunk text through the AI gateway"
+description = "Embed chunk text with the Gemini API"
 requires-python = ">=3.13"
 dependencies = ["httpx>=0.27"]
 
