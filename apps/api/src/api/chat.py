@@ -36,21 +36,22 @@ _ANSWER = (
 
 
 def events(
-    conn: psycopg.Connection[Any],
+    pool: Any,
     repo_id: UUID,
     question: str,
     conversation_id: UUID | None,
 ) -> Iterator[dict[str, str]]:
-    repo = _repo(conn, repo_id)
-    if repo is None:
-        yield _event("error", "repo does not exist")
-        return
-    conversation_id = _conversation(conn, repo_id, conversation_id)
-    _message(conn, conversation_id, "user", question, [])
-    conn.commit()
+    with pool.connection() as conn:
+        repo = _repo(conn, repo_id)
+        if repo is None:
+            yield _event("error", "repo does not exist")
+            return
+        conversation_id = _conversation(conn, repo_id, conversation_id)
+        _message(conn, conversation_id, "user", question, [])
+        conn.commit()
     yield _event("meta", {"conversation_id": str(conversation_id)})
     try:
-        decision, stages, packed = _retrieve(conn, repo, question)
+        decision, stages, packed = _retrieve(pool, repo, question)
         citations = [_citation(hit) for hit in packed]
         yield _event(
             "trace",
@@ -60,13 +61,15 @@ def events(
                 "hits": citations,
             },
         )
-        turns = _turns(conn, conversation_id, packed)
+        with pool.connection() as conn:
+            turns = _turns(conn, conversation_id, packed)
         parts: list[str] = []
         for token in stream(turns, system=_ANSWER):
             parts.append(token)
             yield _event("token", token)
-        _message(conn, conversation_id, "assistant", "".join(parts), citations)
-        conn.commit()
+        with pool.connection() as conn:
+            _message(conn, conversation_id, "assistant", "".join(parts), citations)
+            conn.commit()
         yield _event("citations", citations)
     except Exception as exc:  # noqa: BLE001
         log.info("chat.failed", repo_id=str(repo_id), error=str(exc))
@@ -74,10 +77,12 @@ def events(
 
 
 def _retrieve(
-    conn: psycopg.Connection[Any], repo: tuple[Any, ...], question: str
+    pool: Any, repo: tuple[Any, ...], question: str
 ) -> tuple[Route, list[str], tuple[Hit, ...]]:
     repo_id = repo[0]
-    decision = route(question, _blurb(conn, repo))
+    with pool.connection() as conn:
+        blurb = _blurb(conn, repo)
+    decision = route(question, blurb)
     stages: list[str] = []
     lists: list[tuple[Hit, ...]] = []
     if decision.symbol or decision.semantic or decision.history:
@@ -85,19 +90,23 @@ def _retrieve(
     else:
         plan = Rewrite(queries=[question], hyde="")
     for query in plan.queries:
-        if decision.symbol:
-            lists.append(symbol(conn, repo_id=repo_id, query=query))
+        with pool.connection() as conn:
+            if decision.symbol:
+                lists.append(symbol(conn, repo_id=repo_id, query=query))
+            if decision.semantic:
+                lists.append(full_text(conn, repo_id=repo_id, query=query))
+            if decision.history:
+                lists.append(history(conn, repo_id=repo_id, query=query))
         if decision.semantic:
-            lists.append(full_text(conn, repo_id=repo_id, query=query))
-            lists.append(vector_search(conn, repo_id=repo_id, text=query))
-        if decision.history:
-            lists.append(history(conn, repo_id=repo_id, query=query))
+            with pool.connection() as conn:
+                lists.append(vector_search(conn, repo_id=repo_id, text=query))
     if decision.symbol:
         stages.append("symbol")
     if decision.semantic:
         stages.append("semantic")
         if plan.hyde:
-            lists.append(vector_search(conn, repo_id=repo_id, text=plan.hyde))
+            with pool.connection() as conn:
+                lists.append(vector_search(conn, repo_id=repo_id, text=plan.hyde))
     if decision.history:
         stages.append("history")
     repo_hits = fuse(lists)
@@ -108,11 +117,13 @@ def _retrieve(
         or max(hit.score for hit in repo_hits) < score_floor()
     ):
         query = decision.web_query.strip() or question
-        web_hits = tuple(_from_web(hit) for hit in search(conn, query))
+        with pool.connection() as conn:
+            web_hits = tuple(_from_web(hit) for hit in search(conn, query))
         stages.append("web")
     fused = fuse([repo_hits, web_hits]) if web_hits else repo_hits
-    ranked = rerank(question, fused)
-    return decision, stages, pack(conn, ranked)
+    ranked = rerank(question, fused) if len(fused) > 1 else fused
+    with pool.connection() as conn:
+        return decision, stages, pack(conn, ranked)
 
 
 def _blurb(conn: psycopg.Connection[Any], repo: tuple[Any, ...]) -> Blurb:

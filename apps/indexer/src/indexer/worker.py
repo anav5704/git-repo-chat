@@ -7,6 +7,7 @@ import structlog
 from psycopg_pool import ConnectionPool
 
 from db import open_pool
+from indexer.env import load_env
 from indexer.index import run_job
 from jobs import claim, complete, fail, listen, reap
 
@@ -14,6 +15,7 @@ log = structlog.get_logger()
 
 
 def main() -> None:
+    load_env()
     database_url = os.environ["DATABASE_URL"]
     index_dir = Path(os.environ.get("INDEX_DIR", "data/repos"))
     index_dir.mkdir(parents=True, exist_ok=True)

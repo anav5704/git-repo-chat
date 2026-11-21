@@ -10,6 +10,7 @@ def open_pool(database_url: str | None = None) -> ConnectionPool:
     return ConnectionPool(
         conninfo=database_url,
         min_size=1,
+        max_size=10,
         configure=register_vector,
         open=False,
     )

@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -27,31 +28,38 @@ def complete(turns: Sequence[Turn], *, system: str | None = None) -> str:
 
 def stream(turns: Sequence[Turn], *, system: str | None = None) -> Iterator[str]:
     key, model = _settings()
-    yielded = False
-    with (
-        httpx.Client(timeout=60) as client,
-        client.stream(
-            "POST",
-            f"{_BASE}/models/{model}:streamGenerateContent",
-            headers={"x-goog-api-key": key},
-            params={"alt": "sse"},
-            json=_body(turns, system, None),
-        ) as response,
-    ):
-        if response.status_code != 200:
-            raw = response.read().decode("utf-8", "replace")
-            raise RuntimeError(
-                f"chat request failed: {response.status_code} {raw[:500]}"
-            )
-        for line in response.iter_lines():
-            payload = _event(line)
-            if payload is None:
+    body = _body(turns, system, None)
+    for attempt in range(4):
+        yielded = False
+        with (
+            httpx.Client(timeout=60) as client,
+            client.stream(
+                "POST",
+                f"{_BASE}/models/{model}:streamGenerateContent",
+                headers={"x-goog-api-key": key},
+                params={"alt": "sse"},
+                json=body,
+            ) as response,
+        ):
+            if response.status_code == 429 and attempt < 3:
+                response.read()
+                time.sleep(20)
                 continue
-            text = _text(payload)
-            if text:
-                yielded = True
-                yield text
-    if not yielded:
+            if response.status_code != 200:
+                raw = response.read().decode("utf-8", "replace")
+                raise RuntimeError(
+                    f"chat request failed: {response.status_code} {raw[:500]}"
+                )
+            for line in response.iter_lines():
+                payload = _event(line)
+                if payload is None:
+                    continue
+                text = _text(payload)
+                if text:
+                    yielded = True
+                    yield text
+        if yielded:
+            return
         raise RuntimeError("chat response has no text")
 
 
@@ -68,12 +76,23 @@ def _post(
     turns: Sequence[Turn], system: str | None, schema: dict[str, Any] | None
 ) -> Any:
     key, model = _settings()
+    body = _body(turns, system, schema)
     response = httpx.post(
         f"{_BASE}/models/{model}:generateContent",
         headers={"x-goog-api-key": key},
-        json=_body(turns, system, schema),
+        json=body,
         timeout=60,
     )
+    for attempt in range(3):
+        if response.status_code != 429:
+            break
+        time.sleep(20)
+        response = httpx.post(
+            f"{_BASE}/models/{model}:generateContent",
+            headers={"x-goog-api-key": key},
+            json=body,
+            timeout=60,
+        )
     if response.status_code != 200:
         raise RuntimeError(
             f"chat request failed: {response.status_code} {response.text[:500]}"

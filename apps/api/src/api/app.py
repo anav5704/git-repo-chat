@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from api.chat import events
+from api.env import load_env
 from db import open_pool
 from jobs import enqueue
 
@@ -41,6 +42,7 @@ class ChatIn(BaseModel):
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    load_env()
     pool = open_pool()
     pool.open()
     app.state.pool = pool
@@ -80,6 +82,20 @@ def create_repo(body: RepoIn, request: Request) -> RepoOut:
         except UniqueViolation:
             raise HTTPException(status_code=409, detail="repo already exists") from None
     return repo
+
+
+@app.get("/repos")
+def list_repos(request: Request) -> list[RepoOut]:
+    with request.app.state.pool.connection() as conn:
+        rows = conn.execute(
+            """
+            select *
+            from repos
+            order by created_at desc
+            limit 100
+            """
+        ).fetchall()
+    return [_repo_out(row) for row in rows]
 
 
 @app.get("/repos/{repo_id}")
@@ -128,8 +144,7 @@ def chat(repo_id: UUID, body: ChatIn, request: Request) -> EventSourceResponse:
         raise HTTPException(status_code=404, detail="repo does not exist")
 
     def generate() -> Iterator[dict[str, str]]:
-        with pool.connection() as conn:
-            yield from events(conn, repo_id, body.message, body.conversation_id)
+        yield from events(pool, repo_id, body.message, body.conversation_id)
 
     return EventSourceResponse(generate())
 
